@@ -1,0 +1,11 @@
+#
+# Allocate space for call stack
+#
+#
+
+
+.section data
+        .space 10000
+        endstack:
+
+.section init
