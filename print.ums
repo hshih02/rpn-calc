@@ -1,0 +1,25 @@
+.temps r6, r7
+.zero r0
+
+.section text
+        print_pos_num:
+        pop r5 off stack r2
+        push r1 on stack r2
+        push r3 on stack r2
+        push r4 on stack r2
+        r4 := r5
+        r5 := r5 mod 10  // get least significant number
+        r4 := r4 / 10    // shift everything down one digit
+        r3 := r5
+        
+        if (r4 == 0) goto end
+        
+        push r4 on stack r2
+        goto print_pos_num linking r1
+        end: 
+        r3 := r3 + 48 //convert to ascii suitable output, print out least sig
+        output r3
+        pop r4 off stack r2
+        pop r3 off stack r2
+        pop r1 off stack r2
+        goto r1

@@ -3,9 +3,9 @@
 #
 #
 
-
-.section data
-        .space 10000
+.section data 
+        .space 100000
         endstack:
 
 .section init
+        r2 := endstack
