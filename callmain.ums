@@ -1,11 +1,13 @@
-#
+# callmain.ums
 # 
+# Calls main section and halts after completion
 #
 #
-#
+
 .temps r6, r7
 .zero r0
 
 .section init
+        push r1 on stack r2
         goto main linking r1
         halt

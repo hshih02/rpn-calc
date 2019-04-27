@@ -1,6 +1,6 @@
+# calc40.ums
 #
-# Allocate space for call stack
-#
+# 
 #
 .temps r6, r7
 .zero r0
@@ -9,25 +9,97 @@
         .space 10000
         endvalstack:
 
+.section rodata
+        jumptable:
+        .space 256
+        endjumptable:
+
 .section init 
         r0 := 0
         r3 := endvalstack
+        m[r0][jumptable] := input_error
+        r5 := jumptable
+
+init_jumptable:
+        r5 := r5 + 1
+        m[r0][r5] := input_error
+        if (r5 != endjumptable ) goto init_jumptable using r4
+
+        m[r0][jumptable + '0'] := digit
+        m[r0][jumptable + '1'] := digit
+        m[r0][jumptable + '2'] := digit
+        m[r0][jumptable + '3'] := digit
+        m[r0][jumptable + '4'] := digit
+        m[r0][jumptable + '5'] := digit
+        m[r0][jumptable + '6'] := digit
+        m[r0][jumptable + '7'] := digit
+        m[r0][jumptable + '8'] := digit
+        m[r0][jumptable + '9'] := digit
+        m[r0][jumptable + ' '] := waiting
+        m[r0][jumptable + '\n'] := print
+        m[r0][jumptable + '+'] := add 
+        m[r0][jumptable + '-'] := sub
+        m[r0][jumptable + '*'] := mul
+        m[r0][jumptable + '/'] := div
+        m[r0][jumptable + '|'] := or
+        m[r0][jumptable + '&'] := and
+        m[r0][jumptable + 'c'] := change
+        m[r0][jumptable + '~'] := complement 
+        m[r0][jumptable + 's'] := swap 
+        m[r0][jumptable + 'd'] := dupe
+        m[r0][jumptable + 'p'] := pawp
+        m[r0][jumptable + 'z'] := zerostack
+
+        // goto m[r0][jumptable + 2]
+        // goto waiting
+
+
+
         
 .section text
-        main:
+main:
         push r1 on stack r2
-        // r3 := input()
-        // r3 := r3 - 48 
-        // r4 := input()
-        // r4 := r4 - 48
-        // r5 := r3 + r4
-        // r3 := r5 mod 9
-        // r3 := r3 + 48
-        // output r3
-        // output 10
         r5 := 987654321
         push r5 on stack r2
         goto print_pos_num linking r1
-
         pop r1 off stack r2
         goto r1
+
+waiting:
+        r1 := input()
+
+waiting_with_char:
+
+print:
+
+input_error:
+        output "Unknown character '"
+        output "'"
+        halt
+
+digit:
+
+add:
+
+sub:
+
+mul:
+
+div:
+
+or:
+
+and:
+
+change:
+
+complement:
+
+swap:
+
+dupe:
+
+pawp:
+
+zerostack:
+
