@@ -2,4 +2,3 @@
 
 echo "compiling to calc40.um"
 umasm stack.ums calc40.ums printmodule.ums callmain.ums > calc40.um
-um calc40.um

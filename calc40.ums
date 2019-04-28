@@ -17,12 +17,11 @@
 .section init 
         r0 := 0
         r3 := endvalstack
-        m[r0][jumptable] := input_error
         r5 := jumptable
 
 init_jumptable:
-        r5 := r5 + 1
         m[r0][r5] := input_error
+        r5 := r5 + 1
         if (r5 != endjumptable ) goto init_jumptable using r4
 
         m[r0][jumptable + '0'] := digit
@@ -36,7 +35,7 @@ init_jumptable:
         m[r0][jumptable + '8'] := digit
         m[r0][jumptable + '9'] := digit
         m[r0][jumptable + ' '] := waiting
-        m[r0][jumptable + '\n'] := print
+        m[r0][jumptable + '\n'] := newline
         m[r0][jumptable + '+'] := add 
         m[r0][jumptable + '-'] := sub
         m[r0][jumptable + '*'] := mul
@@ -50,7 +49,7 @@ init_jumptable:
         m[r0][jumptable + 'p'] := pawp
         m[r0][jumptable + 'z'] := zerostack
 
-        // goto m[r0][jumptable + 2]
+        // goto m[r0][jumptable + '+']
         // goto waiting
 
 
@@ -59,33 +58,73 @@ init_jumptable:
 .section text
 main:
         push r1 on stack r2
-        r5 := 987654321
-        push r5 on stack r2
-        goto print_pos_num linking r1
+        // r5 := 987654321
+        // push r5 on stack r2
+        goto waiting linking r1
         pop r1 off stack r2
         goto r1
 
 waiting:
+        push r1 on stack r2
         r1 := input()
+        r5 := jumptable + r1
+        pop r1 off stack r2
+        goto m[r0][r5]   //why cant we "goto r5" here, but we can later?
+        
 
 waiting_with_char:
+        push r1 on stack r2
+        r1 := input()
+
+entering:
+        output "entering state"
+        r1 := input()
+        r5 := r1 + jumptable
+        push r4 on stack r2
+        if (r5 != digit) goto exit_entering_state using r4
+        pop r5 off stack r3    //get previously entered digit
+        output "still in entering"
+        r5 := r5 * 10
+        r5 := r5 + r1
+        r5 := r5 - 48
+        output r5 
+
+exit_entering_state:
+        pop r4 off stack r2
+        goto r5
+
+        
+
+newline:
 
 print:
 
 input_error:
         output "Unknown character '"
+
         output "'"
         halt
 
 digit:
+        output "digit"
+        r5 := r5 - 48   //convert from ascii to actual value
+        push r5 on stack r3   //push digit value onto value stack
+        goto entering
 
 add:
+        output "add"
+        halt
 
 sub:
+        output "sub"
+        halt
 
 mul:
-
+        output "mult"
+        halt
 div:
+        output "divide"
+        halt
 
 or:
 
