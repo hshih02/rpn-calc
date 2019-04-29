@@ -1,3 +1,4 @@
+
 # printmodule.ums
 # 
 # 
@@ -10,7 +11,7 @@
 .section text
 
 print_setup:
-        ouput "print setup"
+        output "print setup"
         push r1 on stack r2
         r5 := m[r0][r3]
         push r5 on stack r2
@@ -18,12 +19,16 @@ print_setup:
 
         queue_print_vals:
         output "queue_print_vals"
-        push r5 on stack r2  //double push r5 to preserve value
+        // push r5 on stack r2  //double push r5 to preserve value 
         goto print_pos_num linking r1
-        pop r5 off stack r2
-        r5 := r5 + 1
+        // pop r5 off stack r2 
+        r5 := r3 + 1
         push r3 on stack r2
-        if (r5 >s endvalstack) goto end_queue using r3
+        
+        push r4 on stack r2
+        if (m[r0][r5] >s endvalstack) goto end_queue using r3, r4
+        pop r3 off stack r2
+        pop r4 off stack r2
         goto queue_print_vals
 
         end_queue:
@@ -50,4 +55,4 @@ print_pos_num:
         pop r4 off stack r2
         pop r3 off stack r2
         pop r1 off stack r2
-        goto r1
+goto r1
