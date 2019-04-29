@@ -11,34 +11,50 @@
 .section text
 
 print_setup:
-        output "print setup"
+        // output "print setup\n"
         push r1 on stack r2
-        r5 := m[r0][r3]
-        push r5 on stack r2
-        goto queue_print_vals
-
-        queue_print_vals:
-        output "queue_print_vals"
-        // push r5 on stack r2  //double push r5 to preserve value 
-        goto print_pos_num linking r1
-        // pop r5 off stack r2 
-        r5 := r3 + 1
-        push r3 on stack r2
-        
-        push r4 on stack r2
-        if (m[r0][r5] >s endvalstack) goto end_queue using r3, r4
-        pop r3 off stack r2
-        pop r4 off stack r2
-        goto queue_print_vals
-
-        end_queue:
-        output "end_queue"
-        pop r3 off stack r2
+        push r3 on stack r2  // save original r3
+        goto pre_queue linking r1
+        // output "back to print_setup \n"
+        pop r3 off stack r2  // revert r3
         pop r1 off stack r2
         goto r1
 
+        pre_queue:
+        // output "prequeue\n"
+        push r1 on stack r2
+        goto queue_print_vals linking r1
+        // output "back to pre_queue \n"
+        pop r1 off stack r2
+        goto r1   //return to print_setup
+
+        queue_print_vals:
+        push r1 on stack r2
+        r5 := m[r0][r3]  // get actual value from value stack
+        push r5 on stack r2
+        // output "queue_print_vals\n"
+        // push r5 on stack r2  //double push r5 to preserve value 
+        output ">>> "
+        goto print_pos_num linking r1
+        // output "back to queue print\n"
+        output '\n'
+        pop r1 off stack r2
+        // pop r5 off stack r2
+        push r4 on stack r2  // temp
+        r3 := r3 + 1 //increment r3 as our value stack pointer
+        if (r3 >=s endvalstack) goto end_queue using r4
+        pop r4 off stack r2  // temp
+        goto queue_print_vals
+
+        end_queue:
+        // output "end_queue\n"
+        pop r3 off stack r2
+        //pop r1 off stack r2
+        goto r1   //return to pre_queue
+
 print_pos_num:
-        pop r5 off stack r2
+        // output "print pos\n"
+        pop r5 off stack r2  // get value from stack
         push r1 on stack r2
         push r3 on stack r2
         push r4 on stack r2
@@ -47,12 +63,14 @@ print_pos_num:
         r4 := r4 / 10    // shift everything down (right) one digit
         r3 := r5
         if (r4 == 0) goto end  // end recursion once we run out of digits
-        push r4 on stack r2
+        push r4 on stack r2   // push new value to stack
         goto print_pos_num linking r1
+        
         end: 
+        // output "END\n"
         r3 := r3 + 48 // convert single digit to ascii
         output r3    //print out 
         pop r4 off stack r2
         pop r3 off stack r2
         pop r1 off stack r2
-goto r1
+        goto r1
