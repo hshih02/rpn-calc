@@ -69,7 +69,7 @@ waiting:
         r1 := input()
         r5 := jumptable + r1
         pop r1 off stack r2
-        goto m[r0][r5]   //why cant we "goto r5" here, but we can later?
+        goto m[r0][r5]   //goto jumptable
         
 
 waiting_with_char:
@@ -77,25 +77,39 @@ waiting_with_char:
         r1 := input()
 
 entering:
-        output "entering state"
+        output "entering state\n"
         r1 := input()
-        r5 := r1 + jumptable
+        r5 := jumptable + r1
         push r4 on stack r2
-        if (r5 != digit) goto exit_entering_state using r4
-        pop r5 off stack r3    //get previously entered digit
-        output "still in entering"
-        r5 := r5 * 10
-        r5 := r5 + r1
-        r5 := r5 - 48
-        output r5 
-
-exit_entering_state:
+        push r1 on stack r2
+        if (m[r0][r5] == digit) goto multiple_digits using r4, r1
+        output "still in entering\n"
+        pop r1 off stack r2
         pop r4 off stack r2
-        goto r5
+        goto m[r0][r5]
+
+multiple_digits:
+        pop r1 off stack r2
+        pop r4 off stack r2
+        pop r5 off stack r3    //get previously entered digit
+        output "multiple digits\n"
+        r1 := r1 - 48 //remove ascii offset
+        output "passed r1 - 48\n"
+        r5 := r5 * 10
+        output "passed r5 * 10\n"
+        r5 := r5 + r1
+        output "passed r5 + r1\n"
+        push r5 on stack r3  //push new mutli digit value onto value stack
+        goto entering
 
         
 
 newline:
+        output "newline\n"
+        push r1 on stack r2
+        goto print_setup linking r1
+        pop r1 off stack r2
+        goto waiting 
 
 print:
 
@@ -106,8 +120,9 @@ input_error:
         halt
 
 digit:
-        output "digit"
-        r5 := r5 - 48   //convert from ascii to actual value
+        output "digit\n"
+        r5 := r5 - jumptable
+        r5 := r5 - 48   //remove ascii offset
         push r5 on stack r3   //push digit value onto value stack
         goto entering
 
