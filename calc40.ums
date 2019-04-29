@@ -183,8 +183,8 @@ add:
         pop r1 off stack r2
 
         push r4 on stack r2  //preserve r4
-        pop r5 off stack r3  // r5 gets most recent value
-        pop r4 off stack r3  // r4 gets second most recent
+        pop r5 off stack r3  // r5 gets most recent value (y)
+        pop r4 off stack r3  // r4 gets second most recent (x)
         r5 := r4 + r5     // x + y
         push r5 on stack r3  // push addition result back on value stack
         pop r4 off stack r2  //restore r4
@@ -206,7 +206,7 @@ mul:
         pop r5 off stack r3  // r5 gets most recent value (y)
         pop r4 off stack r3  // r4 gets second most recent (x)
         r5 := r4 * r5     // x * y
-        push r5 on stack r3  // push addition result back on value stack
+        push r5 on stack r3  // push mutliplication result back on value stack
         pop r4 off stack r2  //restore r4
         goto waiting
 
@@ -220,18 +220,63 @@ div:
         push r4 on stack r2  //preserve r4
         pop r5 off stack r3  // r5 gets most recent value (y)
         pop r4 off stack r3  // r4 gets second most recent (x)
+
+        if (r5 == 0) goto div_by_zero
+
         r5 := r4 / r5     //  x / y
-        push r5 on stack r3  // push addition result back on value stack
+        push r5 on stack r3  // push division result back on value stack
         pop r4 off stack r2  //restore r4
         goto waiting
 
+        div_by_zero:
+        push r4 on stack r3  // restore 2nd most recent value
+        push r5 on stack r3  // restore most recent value
+        pop r4 off stack r2  // restore r4
+        output "Division by zero\n"
+        goto waiting
+
+
 or:
+        // output "or\n"
+        push r1 on stack r2
+        goto check_dbl_underflow linking r1
+        // output "returned to add\n"
+        pop r1 off stack r2
+
+        push r4 on stack r2  //preserve r4
+        pop r5 off stack r3  // r5 gets most recent value (y)
+        pop r4 off stack r3  // r4 gets second most recent (x)
+        r5 := r4 | r5     // x | y
+        push r5 on stack r3  // push or result back on value stack
+        pop r4 off stack r2  //restore r4
+        goto waiting
 
 and:
+        // output "and\n"
+        push r1 on stack r2
+        goto check_dbl_underflow linking r1
+        // output "returned to add\n"
+        pop r1 off stack r2
+
+        push r4 on stack r2  //preserve r4
+        pop r5 off stack r3  // r5 gets most recent value (y)
+        pop r4 off stack r3  // r4 gets second most recent (x)
+        r5 := r4 & r5     // x & y
+        push r5 on stack r3  // push and result back on value stack
+        pop r4 off stack r2  //restore r4
+        goto waiting
 
 change:
 
 complement:
+        push r1 on stack r2
+        goto check_single_underflow linking r1
+        pop r1 off stack r2
+        pop r5 off stack r3
+        r5 := ~r5
+        push r5 on stack r3
+        goto waiting
+
 
 swap:
         // output "swap\n"
@@ -265,7 +310,13 @@ pawp:
         pop r5 off stack r3  //pop element
         goto waiting
 
-
-
 zerostack:
+        push r4 on stack r2 // temp
+        if (r3 >=s endvalstack) goto exit_zerostack using r4
+        pop r4 off stack r2  // undo using temp 
+        pop r5 off stack r3
+        goto zerostack
 
+        exit_zerostack:
+        pop r4 off stack r2  // undo using temp
+        goto waiting
