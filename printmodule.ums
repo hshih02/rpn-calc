@@ -18,7 +18,7 @@ print_setup:
         // output "back to print_setup \n"
         pop r3 off stack r2  // revert r3
         pop r1 off stack r2
-        goto r1
+        goto r1  //return to newline
 
         pre_queue:
         // output "prequeue\n"
@@ -33,22 +33,20 @@ print_setup:
         r5 := m[r0][r3]  // get actual value from value stack
         push r5 on stack r2
         // output "queue_print_vals\n"
-        // push r5 on stack r2  //double push r5 to preserve value 
         output ">>> "
         goto print_pos_num linking r1
         // output "back to queue print\n"
         output '\n'
         pop r1 off stack r2
-        // pop r5 off stack r2
-        push r4 on stack r2  // temp
         r3 := r3 + 1 //increment r3 as our value stack pointer
+        push r4 on stack r2  // temp
         if (r3 >=s endvalstack) goto end_queue using r4
-        pop r4 off stack r2  // temp
+        pop r4 off stack r2  // undo using temp
         goto queue_print_vals
 
         end_queue:
         // output "end_queue\n"
-        pop r3 off stack r2
+        pop r4 off stack r2 // undo using temp
         //pop r1 off stack r2
         goto r1   //return to pre_queue
 

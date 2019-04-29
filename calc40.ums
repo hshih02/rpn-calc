@@ -81,17 +81,17 @@ entering:
         // output "entering state\n"
         r1 := input()
         r5 := jumptable + r1
-        push r4 on stack r2
-        push r1 on stack r2
-        if (m[r0][r5] == digit) goto multiple_digits using r4, r1
+        push r4 on stack r2  // temp
+        push r3 on stack r2  // temp
+        if (m[r0][r5] == digit) goto multiple_digits using r4, r3
         // output "still in entering\n"
-        pop r1 off stack r2
-        pop r4 off stack r2
+        pop r3 off stack r2  // undo using temp
+        pop r4 off stack r2  // undo using temp
         goto m[r0][r5]
 
 multiple_digits:
-        pop r1 off stack r2
-        pop r4 off stack r2
+        pop r3 off stack r2  // undo using temp
+        pop r4 off stack r2  // undo using temp
         pop r5 off stack r3    //get previously entered digit
         // output "multiple digits\n"
         r1 := r1 - 48 //remove ascii offset
@@ -105,17 +105,68 @@ multiple_digits:
 newline:
         // output "newline\n"
         push r1 on stack r2
+        push r3 on stack r2  // preserve r3
+        push r4 on stack r2  // temp
+        // ensure there is a value to print
+        if (r3 == endvalstack) goto noprint using r4 
+        pop r4 off stack r2 // undo using temp
+
         goto print_setup linking r1
         pop r1 off stack r2
         goto waiting 
 
-print:
+        noprint:
+        // if no values to print return to waiting
+        pop r4 off stack r2 // undo using temp
+        pop r1 off stack r2
+        goto waiting
 
 input_error:
+        push r5 on stack r2 
+        r5 := r5 - jumptable
         output "Unknown character '"
+        output r5
+        output "'\n"
+        pop r5 off stack r2
+        goto waiting
 
-        output "'"
-        halt
+check_dbl_underflow:
+        // output "underflow check\n"
+        push r1 on stack r2
+        push r3 on stack r2  // preserve r3
+        r3 := r3 + 1 
+        // ensure there are at least 2 values in value stack
+        push r4 on stack r2  // temp
+        if (r3 >=s endvalstack) goto fail_dbl_underflow using r4
+        // output "underflow ok\n"
+        pop r4 off stack r2  // undo using temp
+        pop r3 off stack r2 // restore r3
+        pop r1 off stack r2
+        goto r1  //return to caller
+
+        fail_dbl_underflow:
+        pop r4 off stack r2 // undo using temp
+        pop r3 off stack r2 // restore r3
+        output "Stack underflow---expected at least 2 elements\n"
+        pop r1 off stack r2
+        goto waiting  // if underflow, skip operation, return to waiting state
+
+check_single_underflow:
+        // output "underflow check\n"
+
+        // ensure there is at least 1 value in value stack
+        push r4 on stack r2  // temp
+        if (r3 >=s endvalstack) goto fail_single_underflow using r4
+        pop r4 off stack r2  // undo using temp
+
+        goto r1  //return to waiting
+
+        fail_single_underflow:
+        pop r4 off stack r2 // undo using temp
+        output "Stack underflow---expected at least 1 element\n"
+        pop r1 off stack r2
+        goto waiting  // if underflow, skip operation, return to waiting state
+
 
 digit:
         // output "digit\n"
@@ -125,19 +176,54 @@ digit:
         goto entering
 
 add:
-        output "add"
-        halt
+        // output "add\n"
+        push r1 on stack r2
+        goto check_dbl_underflow linking r1
+        // output "returned to add\n"
+        pop r1 off stack r2
+
+        push r4 on stack r2  //preserve r4
+        pop r5 off stack r3  // r5 gets most recent value
+        pop r4 off stack r3  // r4 gets second most recent
+        r5 := r4 + r5     // x + y
+        push r5 on stack r3  // push addition result back on value stack
+        pop r4 off stack r2  //restore r4
+        goto waiting
+
 
 sub:
         output "sub"
         halt
 
 mul:
-        output "mult"
-        halt
+        // output "mult\n"
+        push r1 on stack r2
+        goto check_dbl_underflow linking r1
+        // output "returned to add\n"
+        pop r1 off stack r2
+
+        push r4 on stack r2  //preserve r4
+        pop r5 off stack r3  // r5 gets most recent value (y)
+        pop r4 off stack r3  // r4 gets second most recent (x)
+        r5 := r4 * r5     // x * y
+        push r5 on stack r3  // push addition result back on value stack
+        pop r4 off stack r2  //restore r4
+        goto waiting
+
 div:
-        output "divide"
-        halt
+        // output "div\n"
+        push r1 on stack r2
+        goto check_dbl_underflow linking r1
+        // output "returned to add\n"
+        pop r1 off stack r2
+
+        push r4 on stack r2  //preserve r4
+        pop r5 off stack r3  // r5 gets most recent value (y)
+        pop r4 off stack r3  // r4 gets second most recent (x)
+        r5 := r4 / r5     //  x / y
+        push r5 on stack r3  // push addition result back on value stack
+        pop r4 off stack r2  //restore r4
+        goto waiting
 
 or:
 
@@ -148,10 +234,38 @@ change:
 complement:
 
 swap:
+        // output "swap\n"
+        push r1 on stack r2
+        goto check_dbl_underflow linking r1
+        // output "returned to add\n"
+        pop r1 off stack r2
+        
+        push r4 on stack r2  //preserve r4
+        pop r5 off stack r3  // r5 gets most recent value
+        pop r4 off stack r3  // r4 gets second most recent
+        push r5 on stack r3  // push top value back on first
+        push r4 on stack r3  // push second most recent value on top
+        pop r4 off stack r2  //restore r4
+        goto waiting
 
 dupe:
-
+        // output "add\n"
+        push r1 on stack r2
+        goto check_single_underflow linking r1
+        // output "returned to add\n"
+        pop r1 off stack r2
+        pop r5 off stack r3  // r5 gets most recent value
+        push r5 on stack r3  // push value back onto stack
+        push r5 on stack r3  // push value again to duplicate
+        goto waiting
 pawp:
+        push r1 on stack r2
+        goto check_single_underflow linking r1
+        pop r1 off stack r2
+        pop r5 off stack r3  //pop element
+        goto waiting
+
+
 
 zerostack:
 
