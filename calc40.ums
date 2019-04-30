@@ -58,41 +58,56 @@ init_jumptable:
 .section text
 main:
         push r1 on stack r2
-        // r5 := 987654321
-        // push r5 on stack r2
         goto waiting linking r1
+        // output "back to main\n"
         pop r1 off stack r2
         goto r1
 
 waiting:
         // output "waiting state\n"
-        push r1 on stack r2
-        r1 := input()
-waiting_with_char:
-        r5 := jumptable + r1
-        pop r1 off stack r2
+        // push r1 on stack r2
+        r5 := input()
+        push r4 on stack r2
+        if (r5 == 0xFFFFFFFF) goto end_of_file using r4
+        pop r4 off stack r2
+        r5 := jumptable + r5
+        // pop r1 off stack r2
         goto m[r0][r5]   //goto jumptable
+        
+end_of_file:
+        // output "EOF\n"
+        pop r4 off stack r2
+        pop r1 off stack r2
+        // output "popped all\n"
+        goto r1
+
 
 entering:
         // output "entering state\n"
-        r1 := input()
-        r5 := jumptable + r1
+        // push r1 on stack r2
+        r5 := input()
+        push r4 on stack r2
+        if (r5 == 0xFFFFFFFF) goto end_of_file using r4
+        pop r4 off stack r2 
+        r5 := jumptable + r5
         push r4 on stack r2  // temp
         push r3 on stack r2  // temp
         if (m[r0][r5] == digit) goto multiple_digits using r4, r3
         // output "still in entering\n"
         pop r3 off stack r2  // undo using temp
         pop r4 off stack r2  // undo using temp
+        // pop r1 off stack r2  // restore r1
         goto m[r0][r5]
 
 multiple_digits:
         pop r3 off stack r2  // undo using temp
-        pop r4 off stack r2  // undo using temp
-        pop r5 off stack r3    //get previously entered digit
         // output "multiple digits\n"
-        r1 := r1 - 48 //remove ascii offset
-        r5 := r5 * 10
-        r5 := r5 + r1
+        r5 := r5 - jumptable // revert back to raw input value
+        r5 := r5 - 48  // remove ascii offset
+        pop r4 off stack r3    //get previously entered digit
+        r4 := r4 * 10  // increment by one tens place
+        r5 := r5 + r4  // add numbers to get new multi digit value
+        pop r4 off stack r2  // undo using temp
         push r5 on stack r3  //push new mutli digit value onto value stack
         goto entering
 
@@ -101,7 +116,6 @@ multiple_digits:
 newline:
         // output "newline\n"
         push r1 on stack r2
-        push r3 on stack r2  // preserve r3
         push r4 on stack r2  // temp
         // ensure there is a value to print
         if (r3 == endvalstack) goto noprint using r4 
@@ -128,7 +142,7 @@ input_error:
 
 check_dbl_underflow:
         // output "underflow check\n"
-        push r1 on stack r2
+        // push r1 on stack r2
         push r3 on stack r2  // preserve r3
         r3 := r3 + 1 
         // ensure there are at least 2 values in value stack
@@ -137,14 +151,14 @@ check_dbl_underflow:
         // output "underflow ok\n"
         pop r4 off stack r2  // undo using temp
         pop r3 off stack r2 // restore r3
-        pop r1 off stack r2
+        // pop r1 off stack r2
         goto r1  //return to caller
 
         fail_dbl_underflow:
         pop r4 off stack r2 // undo using temp
         pop r3 off stack r2 // restore r3
-        output "Stack underflow---expected at least 2 elements\n"
         pop r1 off stack r2
+        output "Stack underflow---expected at least 2 elements\n"
         goto waiting  // if underflow, skip operation, return to waiting state
 
 check_single_underflow:
@@ -166,6 +180,7 @@ check_single_underflow:
 
 digit:
         // output "digit\n"
+        // upon entering this function, r5 will always be the value + jumptable
         r5 := r5 - jumptable
         r5 := r5 - 48   //remove ascii offset
         push r5 on stack r3   //push digit value onto value stack
