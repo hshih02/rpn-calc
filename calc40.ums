@@ -192,8 +192,19 @@ add:
 
 
 sub:
-        output "sub"
-        halt
+        // output "sub\n"
+        push r1 on stack r2
+        goto check_dbl_underflow linking r1
+        // output "returned to add\n"
+        pop r1 off stack r2
+
+        push r4 on stack r2  //preserve r4
+        pop r5 off stack r3  // r5 gets most recent value (y)
+        pop r4 off stack r3  // r4 gets second most recent (x)
+        r5 := r4 - r5     // x - y
+        push r5 on stack r3  // push addition result back on value stack
+        pop r4 off stack r2  //restore r4
+        goto waiting
 
 mul:
         // output "mult\n"
@@ -223,7 +234,24 @@ div:
 
         if (r5 == 0) goto div_by_zero
 
+        // push r1 on stack r2
+        push r4 on stack r2
+        push r5 on stack r2
+        goto check_negs //linking r1
+
+        pos_div:
+        pop r1 off stack r2 // undo using temp from check negs
+        pop r3 off stack r2  // restore r3 after check negs
         r5 := r4 / r5     //  x / y
+        push r5 on stack r3  // push division result back on value stack
+        pop r4 off stack r2  //restore r4
+        goto waiting
+
+        neg_div:
+        pop r3 off stack r2 // restore r3 after check negs
+        r5 := r4 / r5     //  x / y
+        r5 := ~r5
+        r5 := r5 + 1  // convert result back to negative representation
         push r5 on stack r3  // push division result back on value stack
         pop r4 off stack r2  //restore r4
         goto waiting
@@ -234,6 +262,49 @@ div:
         pop r4 off stack r2  // restore r4
         output "Division by zero\n"
         goto waiting
+
+
+check_negs:
+        pop r5 off stack r2
+        pop r4 off stack r2
+
+        push r3 on stack r2 // designate r3 as our flag bit
+        r3 := 0   // set flag to 0, FALSE
+        
+        push r5 on stack r2
+        r5 := r5 & 2147483648 // negative test
+        if (r5 != 0) goto change_y
+        pop r5 off stack r2 // restore r5 as is if not negative
+        goto post_change_y
+
+        change_y:  // if y is negative, convert to pos decimal representation
+        pop r5 off stack r2 // restore r5 
+        r5 := ~r5
+        r5 := r5 + 1 
+        r3 := 1
+        goto post_change_y
+
+post_change_y:
+        push r4 on stack r2
+        r4 := r4 & 2147483648 // negative test
+        if (r4 != 0) goto change_x
+        pop r4 off stack r2 // restore r4 as is if not negative
+        goto post_change_x
+
+        change_x: // if x is negative, convert to pos decimal representation
+        pop r4 off stack r2 // restore r4
+        r4 := ~r4
+        r4 := r4 + 1
+        r3 := 1
+
+post_change_x:
+        // how to check for double negs: if both are negative, x*y will be positive
+        push r1 on stack r2
+        if (r3 != 1) goto pos_div using r1  // r3 == 1 implies a value is neg
+        pop r1 off stack r2 // undo using temp
+        goto neg_div
+
+
 
 
 or:
@@ -267,6 +338,14 @@ and:
         goto waiting
 
 change:
+        push r1 on stack r2
+        goto check_single_underflow linking r1
+        pop r1 off stack r2
+        pop r5 off stack r3
+        r5 := ~r5
+        r5 := r5 + 1   // convert to two's complement
+        push r5 on stack r3
+        goto waiting
 
 complement:
         push r1 on stack r2

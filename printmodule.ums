@@ -31,9 +31,18 @@ print_setup:
         queue_print_vals:
         push r1 on stack r2
         r5 := m[r0][r3]  // get actual value from value stack
+
+        //
+        //2147483648
+
         push r5 on stack r2
-        // output "queue_print_vals\n"
+        
         output ">>> "
+        r5 := r5 & 2147483648 // get complement of value
+
+        if (r5 != 0) goto print_negative
+        continue_print:
+        // output "queue_print_vals\n"
         goto print_pos_num linking r1
         // output "back to queue print\n"
         output '\n'
@@ -43,6 +52,14 @@ print_setup:
         if (r3 >=s endvalstack) goto end_queue using r4
         pop r4 off stack r2  // undo using temp
         goto queue_print_vals
+
+        print_negative:
+        pop r5 off stack r2  // get value again
+        r5 := ~r5
+        r5 := r5 + 1  // convert back to decimal representation
+        push r5 on stack r2  // push back onto value stack
+        output '-'
+        goto continue_print
 
         end_queue:
         // output "end_queue\n"
