@@ -1,48 +1,56 @@
 
 # printmodule.ums
 # 
-# 
-#
+# Holds functions for printing positive and negative values recursively
 #
 
 .temps r6, r7
 .zero r0
 
+// r1 holds return address back to newline. Within each sublabel r1 points 
+// to previous label/location of caller.
+//
+// call stack pointer in r2
+// value stack pointer in r3
+// nonvolatiles r0, r3, r4
+// r0 is zero
+
 .section text
 
+// Main caller for print, sets up stack for successive functions and 
+// returns to newline upon completion
 print_setup:
         push r1 on stack r2
-        push r3 on stack r2  // save original r3
-        goto pre_queue linking r1
-        pop r3 off stack r2  // revert r3
+        push r3 on stack r2  
+        // r3 will be used as an counter for print functions
+        goto queue_print_vals linking r1
+        pop r3 off stack r2 // restore r3 upon completion of print
         pop r1 off stack r2
         goto r1  //return to newline
 
-        pre_queue:
-        push r1 on stack r2
-        goto queue_print_vals linking r1
-        pop r1 off stack r2
-        goto r1   //return to print_setup
-
-        queue_print_vals:
+// Pushes top value of value stack r3 onto call stack, prints arrows
+// and checks polarity of value to call either print_negative or print_pos_num
+// then prints a newline and returns to print_setup
+queue_print_vals:
         push r1 on stack r2
         r5 := m[r0][r3]  // get actual value from value stack
         push r5 on stack r2
         output ">>> "
         r5 := r5 & 2147483648 // get complement of value
         if (r5 != 0) goto print_negative
-
         continue_print:
         goto print_pos_num linking r1
         output '\n'
         pop r1 off stack r2
-        r3 := r3 + 1 //increment r3 as our value stack pointer
-        push r4 on stack r2  // temp
+        r3 := r3 + 1 // increment r3 as our value stack pointer
+        push r4 on stack r2
         if (r3 >=s endvalstack) goto end_queue using r4
-        pop r4 off stack r2  // undo using temp
+        pop r4 off stack r2
         goto queue_print_vals
 
-        print_negative:
+// Prints a '-' sign, then proceeds to print value in decimal representation
+// and returns to continue_print
+print_negative:
         pop r5 off stack r2  // get value again
         r5 := ~r5
         r5 := r5 + 1  // convert back to decimal representation
@@ -50,10 +58,13 @@ print_setup:
         output '-'
         goto continue_print
 
-        end_queue:
-        pop r4 off stack r2 // undo using temp
+// Restores a temp using register and then returns to pre_queue
+end_queue:
+        pop r4 off stack r2
         goto r1   //return to pre_queue
 
+// Recursively prints all digits of the value and returns to queue_print_vals
+// upon completion
 print_pos_num:
         pop r5 off stack r2  // get value from stack
         push r1 on stack r2
@@ -64,12 +75,12 @@ print_pos_num:
         r4 := r4 / 10    // shift everything down (right) one digit
         r3 := r5
         if (r4 == 0) goto end  // end recursion once we run out of digits
-        push r4 on stack r2   // push new value to stack
+        push r4 on stack r2
         goto print_pos_num linking r1
         
         end: 
-        r3 := r3 + 48 // convert single digit to ascii
-        output r3    //print out 
+        r3 := r3 + 48
+        output r3    // print out 
         pop r4 off stack r2
         pop r3 off stack r2
         pop r1 off stack r2

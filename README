@@ -1,0 +1,31 @@
+README
+
+Henning Shih (hshih02), Omar Badr (obadr01)
+
+TA Acknowledgements: Ben London, Byron, Sam, Elloise, Noah
+
+All aspects have been correctly implemented to the best of our knowledge.
+
+==============================================
+DEPARTURES FROM RECOMMENDED CALLING CONVENTION
+==============================================
+r1 does not store a return value, only a return address. Return values
+are generally stored in the value stack r3 and popped off when needed.
+In some cases, a function will preemptively push values in r5/r4 onto the
+call stack to pass them into the next function. Pop will be handled in the 
+callee function in such cases.
+
+The print module is implemented as a recursive function that prints one digit
+at a time.
+
+Hours spent analyzing the assignment:
+8
+
+Hours spent writing assembly code:
+10
+
+Hours spent debugging calculator:
+7
+
+Total hours spent:
+25

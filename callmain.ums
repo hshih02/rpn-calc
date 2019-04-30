@@ -2,7 +2,6 @@
 # 
 # Calls main section and halts after completion
 #
-#
 
 .temps r6, r7
 .zero r0
