@@ -11,40 +11,29 @@
 .section text
 
 print_setup:
-        // output "print setup\n"
         push r1 on stack r2
         push r3 on stack r2  // save original r3
         goto pre_queue linking r1
-        // output "back to print_setup \n"
         pop r3 off stack r2  // revert r3
         pop r1 off stack r2
         goto r1  //return to newline
 
         pre_queue:
-        // output "prequeue\n"
         push r1 on stack r2
         goto queue_print_vals linking r1
-        // output "back to pre_queue \n"
         pop r1 off stack r2
         goto r1   //return to print_setup
 
         queue_print_vals:
         push r1 on stack r2
         r5 := m[r0][r3]  // get actual value from value stack
-
-        //
-        //2147483648
-
         push r5 on stack r2
-        
         output ">>> "
         r5 := r5 & 2147483648 // get complement of value
-
         if (r5 != 0) goto print_negative
+
         continue_print:
-        // output "queue_print_vals\n"
         goto print_pos_num linking r1
-        // output "back to queue print\n"
         output '\n'
         pop r1 off stack r2
         r3 := r3 + 1 //increment r3 as our value stack pointer
@@ -62,13 +51,10 @@ print_setup:
         goto continue_print
 
         end_queue:
-        // output "end_queue\n"
         pop r4 off stack r2 // undo using temp
-        //pop r1 off stack r2
         goto r1   //return to pre_queue
 
 print_pos_num:
-        // output "print pos\n"
         pop r5 off stack r2  // get value from stack
         push r1 on stack r2
         push r3 on stack r2
@@ -82,7 +68,6 @@ print_pos_num:
         goto print_pos_num linking r1
         
         end: 
-        // output "END\n"
         r3 := r3 + 48 // convert single digit to ascii
         output r3    //print out 
         pop r4 off stack r2

@@ -1,0 +1,3 @@
+#! /bin/sh
+
+umasm stack.ums calc40.ums printmodule.ums callmain.ums > calc40.um

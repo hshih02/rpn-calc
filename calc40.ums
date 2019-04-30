@@ -1,6 +1,8 @@
 # calc40.ums
-#
 # 
+# Main module holding all calculation operations and the value stack.
+# Upon entry and exit of each label, r3 points to or will be restored to the
+# top of the value stack.
 #
 .temps r6, r7
 .zero r0
@@ -19,11 +21,12 @@
         r3 := endvalstack
         r5 := jumptable
 
+// Initialize all 256 values of jumptable to input_error or corresponding
+// operation
 init_jumptable:
         m[r0][r5] := input_error
         r5 := r5 + 1
         if (r5 != endjumptable ) goto init_jumptable using r4
-
         m[r0][jumptable + '0'] := digit
         m[r0][jumptable + '1'] := digit
         m[r0][jumptable + '2'] := digit
@@ -48,79 +51,73 @@ init_jumptable:
         m[r0][jumptable + 'd'] := dupe
         m[r0][jumptable + 'p'] := pawp
         m[r0][jumptable + 'z'] := zerostack
-
-        // goto m[r0][jumptable + '+']
-        // goto waiting
-
-
-
         
 .section text
+// Goes to waiting and returns to r1 upon reaching exit condition, where
+// r1 returns to callmain
 main:
         push r1 on stack r2
         goto waiting linking r1
-        // output "back to main\n"
         pop r1 off stack r2
         goto r1
 
+// Goes to corresponding jumptable entry based on input, r5 stores
+// offset + jumptable
+// Goes to end_of_file if r5 == EOF
 waiting:
-        // output "waiting state\n"
-        // push r1 on stack r2
         r5 := input()
         push r4 on stack r2
         if (r5 == 0xFFFFFFFF) goto end_of_file using r4
         pop r4 off stack r2
         r5 := jumptable + r5
-        // pop r1 off stack r2
-        goto m[r0][r5]   //goto jumptable
-        
+        goto m[r0][r5]
+
+// Restores r1 value and returns to r1, where r1 points to main
 end_of_file:
-        // output "EOF\n"
         pop r4 off stack r2
         pop r1 off stack r2
-        // output "popped all\n"
         goto r1
 
-
+// Goes to multiple digit if input is a consecutive single digit number
+// If input is not a digit, goes to corresponding operation instead 
+// At redirection r5 store offset + jumptable
 entering:
-        // output "entering state\n"
-        // push r1 on stack r2
         r5 := input()
         push r4 on stack r2
         if (r5 == 0xFFFFFFFF) goto end_of_file using r4
         pop r4 off stack r2 
         r5 := jumptable + r5
-        push r4 on stack r2  // temp
-        push r3 on stack r2  // temp
+        push r4 on stack r2
+        push r3 on stack r2
         if (m[r0][r5] == digit) goto multiple_digits using r4, r3
-        // output "still in entering\n"
-        pop r3 off stack r2  // undo using temp
-        pop r4 off stack r2  // undo using temp
-        // pop r1 off stack r2  // restore r1
+        pop r3 off stack r2
+        pop r4 off stack r2
         goto m[r0][r5]
 
+// Restores r3 to original value at start
+// Increments top value in valuestack by one tens' place and appends 
+// input value to the ones' place, to be store in r5. r5 is pushed to
+// top of value stack and replaces the original top value
 multiple_digits:
-        pop r3 off stack r2  // undo using temp
-        // output "multiple digits\n"
-        r5 := r5 - jumptable // revert back to raw input value
-        r5 := r5 - 48  // remove ascii offset
-        pop r4 off stack r3    //get previously entered digit
+        pop r3 off stack r2
+        r5 := r5 - jumptable
+        r5 := r5 - 48
+        pop r4 off stack r3
         r4 := r4 * 10  // increment by one tens place
         r5 := r5 + r4  // add numbers to get new multi digit value
-        pop r4 off stack r2  // undo using temp
-        push r5 on stack r3  //push new mutli digit value onto value stack
+        pop r4 off stack r2
+        push r5 on stack r3
         goto entering
 
-        
-
+// 
+//
+//
 newline:
-        // output "newline\n"
         push r1 on stack r2
         push r4 on stack r2  // temp
         // ensure there is a value to print
         if (r3 == endvalstack) goto noprint using r4 
         pop r4 off stack r2 // undo using temp
-
         goto print_setup linking r1
         pop r1 off stack r2
         goto waiting 
@@ -141,17 +138,13 @@ input_error:
         goto waiting
 
 check_dbl_underflow:
-        // output "underflow check\n"
-        // push r1 on stack r2
         push r3 on stack r2  // preserve r3
         r3 := r3 + 1 
         // ensure there are at least 2 values in value stack
         push r4 on stack r2  // temp
         if (r3 >=s endvalstack) goto fail_dbl_underflow using r4
-        // output "underflow ok\n"
         pop r4 off stack r2  // undo using temp
         pop r3 off stack r2 // restore r3
-        // pop r1 off stack r2
         goto r1  //return to caller
 
         fail_dbl_underflow:
@@ -162,13 +155,10 @@ check_dbl_underflow:
         goto waiting  // if underflow, skip operation, return to waiting state
 
 check_single_underflow:
-        // output "underflow check\n"
-
         // ensure there is at least 1 value in value stack
         push r4 on stack r2  // temp
         if (r3 >=s endvalstack) goto fail_single_underflow using r4
         pop r4 off stack r2  // undo using temp
-
         goto r1  //return to waiting
 
         fail_single_underflow:
@@ -177,22 +167,17 @@ check_single_underflow:
         pop r1 off stack r2
         goto waiting  // if underflow, skip operation, return to waiting state
 
-
 digit:
-        // output "digit\n"
-        // upon entering this function, r5 will always be the value + jumptable
+        // upon entering this function r5 will always be the value + jumptable
         r5 := r5 - jumptable
         r5 := r5 - 48   //remove ascii offset
         push r5 on stack r3   //push digit value onto value stack
         goto entering
 
 add:
-        // output "add\n"
         push r1 on stack r2
         goto check_dbl_underflow linking r1
-        // output "returned to add\n"
         pop r1 off stack r2
-
         push r4 on stack r2  //preserve r4
         pop r5 off stack r3  // r5 gets most recent value (y)
         pop r4 off stack r3  // r4 gets second most recent (x)
@@ -203,27 +188,21 @@ add:
 
 
 sub:
-        // output "sub\n"
         push r1 on stack r2
         goto check_dbl_underflow linking r1
-        // output "returned to add\n"
         pop r1 off stack r2
-
         push r4 on stack r2  //preserve r4
         pop r5 off stack r3  // r5 gets most recent value (y)
         pop r4 off stack r3  // r4 gets second most recent (x)
         r5 := r4 - r5     // x - y
-        push r5 on stack r3  // push addition result back on value stack
+        push r5 on stack r3  // push subtraction result back on value stack
         pop r4 off stack r2  //restore r4
         goto waiting
 
 mul:
-        // output "mult\n"
         push r1 on stack r2
         goto check_dbl_underflow linking r1
-        // output "returned to add\n"
         pop r1 off stack r2
-
         push r4 on stack r2  //preserve r4
         pop r5 off stack r3  // r5 gets most recent value (y)
         pop r4 off stack r3  // r4 gets second most recent (x)
@@ -233,18 +212,13 @@ mul:
         goto waiting
 
 div:
-        // output "div\n"
         push r1 on stack r2
         goto check_dbl_underflow linking r1
-        // output "returned to add\n"
         pop r1 off stack r2
-
         push r4 on stack r2  //preserve r4
         pop r5 off stack r3  // r5 gets most recent value (y)
         pop r4 off stack r3  // r4 gets second most recent (x)
-
         if (r5 == 0) goto div_by_zero
-
         push r4 on stack r2
         push r5 on stack r2
         goto check_negs
@@ -273,14 +247,11 @@ div:
         output "Division by zero\n"
         goto waiting
 
-
 check_negs:
         pop r5 off stack r2
         pop r4 off stack r2
-
         push r3 on stack r2 // designate r3 as our flag bit
         r3 := 0   // set flag to 0, FALSE
-        
         push r5 on stack r2
         r5 := r5 & 2147483648 // negative test
         if (r5 != 0) goto change_y
@@ -294,7 +265,7 @@ check_negs:
         r3 := r3 +1
         goto post_change_y
 
-post_change_y:
+        post_change_y:
         push r4 on stack r2
         r4 := r4 & 2147483648 // negative test
         if (r4 != 0) goto change_x
@@ -307,23 +278,16 @@ post_change_y:
         r4 := r4 + 1
         r3 := r3 + 1
 
-post_change_x:
-
+        post_change_x:
         push r1 on stack r2
         if (r3 == 1) goto neg_div using r1  // if exactly 1 negative value
         pop r1 off stack r2 // undo using temp
         goto pos_div  // in cases of no negatives or double negatives, pos div
 
-
-
-
 or:
-        // output "or\n"
         push r1 on stack r2
         goto check_dbl_underflow linking r1
-        // output "returned to add\n"
         pop r1 off stack r2
-
         push r4 on stack r2  //preserve r4
         pop r5 off stack r3  // r5 gets most recent value (y)
         pop r4 off stack r3  // r4 gets second most recent (x)
@@ -333,12 +297,9 @@ or:
         goto waiting
 
 and:
-        // output "and\n"
         push r1 on stack r2
         goto check_dbl_underflow linking r1
-        // output "returned to add\n"
         pop r1 off stack r2
-
         push r4 on stack r2  //preserve r4
         pop r5 off stack r3  // r5 gets most recent value (y)
         pop r4 off stack r3  // r4 gets second most recent (x)
@@ -366,14 +327,10 @@ complement:
         push r5 on stack r3
         goto waiting
 
-
 swap:
-        // output "swap\n"
         push r1 on stack r2
         goto check_dbl_underflow linking r1
-        // output "returned to add\n"
         pop r1 off stack r2
-        
         push r4 on stack r2  //preserve r4
         pop r5 off stack r3  // r5 gets most recent value
         pop r4 off stack r3  // r4 gets second most recent
@@ -383,15 +340,14 @@ swap:
         goto waiting
 
 dupe:
-        // output "add\n"
         push r1 on stack r2
         goto check_single_underflow linking r1
-        // output "returned to add\n"
         pop r1 off stack r2
         pop r5 off stack r3  // r5 gets most recent value
         push r5 on stack r3  // push value back onto stack
         push r5 on stack r3  // push value again to duplicate
         goto waiting
+
 pawp:
         push r1 on stack r2
         goto check_single_underflow linking r1
